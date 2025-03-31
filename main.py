@@ -1,46 +1,40 @@
-import os
+import time
 from dotenv import dotenv_values
 from terminal_shop import Terminal
-from terminal_shop.types import Order, OrderCreateResponse, OrderListResponse, OrderGetResponse
-from terminal_shop.types import (
-  Address,
-  AddressCreateResponse,
-  AddressListResponse,
-  AddressDeleteResponse,
-  AddressGetResponse,
-)
+from terminal_shop.types import Product, Address, Card
+from terminalShop import getClient, getProduct, getAddress, getCard, createOrder
+from pynput import keyboard
 
 config = dotenv_values(".env")
 
 token = config["TERMINAL_BEARER_TOKEN"]
 environment = config["ENVIRONMENT"]
 darkModeID = config["DARK_MODE"]
-darkMode = None
-shipAddress = None
+orderQty : int = int(config["ORDER_QTY"])
 
-client = Terminal(
-  bearer_token=token,  # This is the default and can be omitted
-  environment="dev", # defaults to "production".
-)
+client : Terminal = None
+darkMode : Product = None
+shipAddress : Address = None
+card : Card = None
 
-try:
-  product = client.product.get(darkModeID)
-  darkMode = product.data
-except:
-  print("Product ErrorError")
+client = getClient(token)
+darkMode = getProduct(client, darkModeID)
+shipAddress = getAddress(client)
+card = getCard(client)
 
-try:
-  addresses = client.address.list()
+def on_press(key):
+  try:
+    if key == keyboard.Key.enter:
+      createOrder(client, card, shipAddress, darkMode, orderQty)
+      time.sleep(5)
+      return False  # Stop the listener
+  except AttributeError:
+      pass
 
-  if len(addresses.data) > 0:
-    shipAddress = addresses.data[0]
-  else:
-    print("Address not found")
-except:
-  print("Address Error")
+def poll_enter():
+  with keyboard.Listener(on_press=on_press) as listener:
+    listener.join()
 
-
-print(darkMode)
-print(shipAddress)
-
-# create order needs addressid, card id, varients with qty
+while True:
+  if(True): # Switch on
+    poll_enter() # This flow will need to change for button press
